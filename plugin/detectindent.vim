@@ -16,7 +16,7 @@
 "                " to set a preferred indent level when detection is
 "                " impossible:
 "                :let g:detectindent_preferred_indent = 4
-"                
+"
 "                " To use preferred values instead of guessing:
 "                :let g:detectindent_preferred_when_mixed = 1
 "
@@ -32,20 +32,41 @@ if !exists('g:detectindent_verbosity')
 endif
 
 fun! <SID>HasCStyleComments()
-    return index(["c", "cpp", "java", "javascript", "php", "vala"], &ft) != -1
+    return index(["c", "cpp", "cc", "go", "java", "javascript", "php", "vala"], &ft) != -1
+endfun
+
+fun! <SID>HasPythonStyleComments()
+    return index(["py"], &ft) != -1
 endfun
 
 fun! <SID>IsCommentStart(line)
-    " &comments aren't reliable
-    return <SID>HasCStyleComments() && a:line =~ '/\*'
+    if <SID>HasCStyleComments()
+        return a:line =~ '/\*'
+    endif
+
+    if <SID>HasPythonStyleComments()
+        return a:line =~ '\"\"\"'
+    endif
 endfun
 
 fun! <SID>IsCommentEnd(line)
-    return <SID>HasCStyleComments() && a:line =~ '\*/'
+    if <SID>HasCStyleComments()
+        return a:line =~ '\*/'
+    endif
+
+    if <SID>HasPythonStyleComments()
+        return a:line =~ '\"\"\"'
+    endif
 endfun
 
 fun! <SID>IsCommentLine(line)
-    return <SID>HasCStyleComments() && a:line =~ '^\s\+//'
+    if <SID>HasCStyleComments()
+        return a:line =~ '^\s\+//'
+    endif
+
+    if <SID>HasPythonStyleComments()
+        return a:line =~ '^\s#'
+    endif
 endfun
 
 fun! s:GetValue(option)
