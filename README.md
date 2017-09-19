@@ -6,6 +6,8 @@ the active file.
 
 :DetectIndentV -- to show the message of the command :DetectIndent
 
+:DetectIndentM -- to manually set expendtab, tabstop and shiftwidth. It accepts up to three parameters.
+
 You can use following options to control the plugin. Or the plugin will fall back to global setting if unable to detect.
 * g:detectindent_preferred_expandtab
 * g:detectindent_preferred_indent

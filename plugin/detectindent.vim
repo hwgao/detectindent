@@ -78,7 +78,7 @@ fun! <SID>DetectIndent()
     let l:shortest_leading_spaces_idx = 0
     let l:max_lines                   = 128
     if exists("g:detectindent_max_lines_to_analyse")
-      let l:max_lines = g:detectindent_max_lines_to_analyse
+        let l:max_lines = g:detectindent_max_lines_to_analyse
     endif
 
     let verbose_msg = ''
@@ -201,6 +201,36 @@ fun! <SID>DetectIndentV()
     echo g:detectindent_verbose_msg
 endfun
 
+fun! <SID>DetectIndentM(...)
+    if a:0 == 0
+        let l:et = g:detectindent_preferred_expandtab
+        let l:ts = g:detectindent_preferred_indent
+        let l:sw = l:ts
+    elseif a:0 == 1
+        let l:et = a:1
+        let l:ts = g:detectindent_preferred_indent
+        let l:sw = l:ts
+    elseif a:0 == 2
+        let l:et = a:1
+        let l:ts = a:2
+        let l:sw = l:ts
+    else
+        let l:et = a:1
+        let l:ts = a:2
+        let l:sw = a:3
+    endif
+
+    if l:et
+        setl expandtab
+    else
+        setl noexpandtab
+    endif
+
+    let &l:tabstop     = l:ts
+    let &l:shiftwidth  = l:sw
+endfun
+
 command! -bar -nargs=0 DetectIndent call <SID>DetectIndent()
 command! -bar -nargs=0 DetectIndentV call <SID>DetectIndentV()
+command! -bar -nargs=* DetectIndentM call <SID>DetectIndentM(<f-args>)
 
