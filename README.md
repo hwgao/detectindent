@@ -1,9 +1,14 @@
-A Vim plugin, for automatically detecting indent settings.  This plugin adds a
-:DetectIndent command, which tries to intelligently set the 'shiftwidth',
+A Vim plugin, for automatically detecting indent settings.  
+
+:DetectIndent -- try to intelligently set the 'shiftwidth',
 'expandtab' and 'tabstop' options based upon the existing settings in use in
 the active file.
 
-You may wish to consider one of the many forks of this project. Be aware that
-some of these forks have merged patches that I have been ignoring for good
-reasons, and that long lists of special cases are not necessarily a good
-idea...
+:DetectIndentV -- to show the message of the command :DetectIndent
+
+You can use following options to control the plugin. Or the plugin will fall back to global setting if unable to detect.
+g:detectindent_preferred_expandtab
+g:detectindent_preferred_indent
+g:detectindent_preferred_when_mixed
+
+Currently :DetectIndent can skip c/c++ style comments and triple quoted string of python file while detecting.
