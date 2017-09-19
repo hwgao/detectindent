@@ -26,47 +26,41 @@ if exists("loaded_detectindent")
     finish
 endif
 let loaded_detectindent = 1
+let g:detectindent_verbose_msg = 'Run :DetectIndent first'
 
-if !exists('g:detectindent_verbosity')
-    let g:detectindent_verbosity = 1
+if !exists('g:detectindent_preferred_expandtab')
+    let g:detectindent_preferred_expandtab = &et
 endif
 
-fun! <SID>HasCStyleComments()
-    return index(["c", "cpp", "cc", "go", "java", "javascript", "php", "vala"], &ft) != -1
-endfun
+if !exists('g:detectindent_preferred_indent')
+    let g:detectindent_preferred_indent = &ts
+endif
 
-fun! <SID>HasPythonStyleComments()
-    return index(["py"], &ft) != -1
-endfun
-
+" magic mode is on
 fun! <SID>IsCommentStart(line)
-    if <SID>HasCStyleComments()
-        return a:line =~ '/\*'
-    endif
-
-    if <SID>HasPythonStyleComments()
-        return a:line =~ '\"\"\"'
-    endif
+    return a:line =~ '/\*'
 endfun
 
 fun! <SID>IsCommentEnd(line)
-    if <SID>HasCStyleComments()
-        return a:line =~ '\*/'
-    endif
-
-    if <SID>HasPythonStyleComments()
-        return a:line =~ '\"\"\"'
-    endif
+    return a:line =~ '\*/'
 endfun
 
 fun! <SID>IsCommentLine(line)
-    if <SID>HasCStyleComments()
-        return a:line =~ '^\s\+//'
+    return a:line =~ '\s*\(//\|#\|"\)'
+endfun
+
+fun! <SID>IsTripleQuote(line)
+    if &ft != "python"
+        return 0
     endif
 
-    if <SID>HasPythonStyleComments()
-        return a:line =~ '^\s#'
+    if a:line =~ "\s*'''"
+        return 1
+    elseif a:line =~ '\s*"""'
+        return 1
     endif
+
+    return 0
 endfun
 
 fun! s:GetValue(option)
@@ -82,18 +76,12 @@ fun! <SID>DetectIndent()
     let l:has_leading_spaces          = 0
     let l:shortest_leading_spaces_run = 0
     let l:shortest_leading_spaces_idx = 0
-    let l:longest_leading_spaces_run  = 0
-    let l:max_lines                   = 1024
+    let l:max_lines                   = 128
     if exists("g:detectindent_max_lines_to_analyse")
       let l:max_lines = g:detectindent_max_lines_to_analyse
     endif
 
     let verbose_msg = ''
-    if ! exists("b:detectindent_cursettings")
-      " remember initial values for comparison
-      let b:detectindent_cursettings = {'expandtab': &et, 'shiftwidth': &sw, 'tabstop': &ts, 'softtabstop': &sts}
-    endif
-
     let l:idx_end = line("$")
     let l:idx = 1
     while l:idx <= l:idx_end
@@ -112,6 +100,19 @@ fun! <SID>DetectIndent()
 
         " Skip comment lines since they are not dependable.
         if <SID>IsCommentLine(l:line)
+            let l:idx = l:idx + 1
+            continue
+        endif
+
+        " Skip python triple quote
+        if <SID>IsTripleQuote(l:line)
+            while l:idx <= l:idx_end
+                let l:idx = l:idx + 1
+                let l:line = getline(l:idx)
+                if <SID>IsTripleQuote(l:line)
+                    break
+                endif
+            endwhile
             let l:idx = l:idx + 1
             continue
         endif
@@ -138,9 +139,6 @@ fun! <SID>DetectIndent()
                             \ l:spaces < l:shortest_leading_spaces_run
                     let l:shortest_leading_spaces_run = l:spaces
                     let l:shortest_leading_spaces_idx = l:idx
-                endif
-                if l:spaces > l:longest_leading_spaces_run
-                    let l:longest_leading_spaces_run = l:spaces
                 endif
             endif
 
@@ -169,64 +167,40 @@ fun! <SID>DetectIndent()
         " spaces only, no tabs
         let l:verbose_msg = "Detected spaces only and no tabs"
         setl expandtab
-        let &l:shiftwidth  = l:shortest_leading_spaces_run
-        let &l:softtabstop = l:shortest_leading_spaces_run
+        let &l:shiftwidth = l:shortest_leading_spaces_run
+        let &l:tabstop    = l:shortest_leading_spaces_run
 
     elseif l:has_leading_spaces && l:has_leading_tabs && ! s:GetValue("detectindent_preferred_when_mixed")
         " spaces and tabs
         let l:verbose_msg = "Detected spaces and tabs"
         setl noexpandtab
         let &l:shiftwidth = l:shortest_leading_spaces_run
-
-        " mmmm, time to guess how big tabs are
-        if l:longest_leading_spaces_run <= 2
-            let &l:tabstop = 2
-        elseif l:longest_leading_spaces_run <= 4
-            let &l:tabstop = 4
-        else
-            let &l:tabstop = 8
-        endif
+        let &l:tabstop    = l:shortest_leading_spaces_run
 
     else
         " no spaces, no tabs
         let l:verbose_msg = s:GetValue("detectindent_preferred_when_mixed") ? "preferred_when_mixed is active" : "Detected no spaces and no tabs"
-        if s:GetValue("detectindent_preferred_indent") &&
-                    \ (s:GetValue("detectindent_preferred_expandtab"))
-            setl expandtab
-            let &l:shiftwidth  = g:detectindent_preferred_indent
-            let &l:softtabstop = g:detectindent_preferred_indent
-        elseif s:GetValue("detectindent_preferred_indent")
-            setl noexpandtab
-            let &l:shiftwidth  = g:detectindent_preferred_indent
-            let &l:tabstop     = g:detectindent_preferred_indent
-        elseif s:GetValue("detectindent_preferred_expandtab")
+        if s:GetValue("detectindent_preferred_expandtab")
             setl expandtab
         else
             setl noexpandtab
         endif
+        let &l:shiftwidth  = g:detectindent_preferred_indent
+        let &l:tabstop     = g:detectindent_preferred_indent
 
     endif
 
-    if &verbose >= g:detectindent_verbosity
-        echo l:verbose_msg
-                    \ ."; has_leading_tabs:" l:has_leading_tabs
-                    \ .", has_leading_spaces:" l:has_leading_spaces
-                    \ .", shortest_leading_spaces_run:" l:shortest_leading_spaces_run
-                    \ .", shortest_leading_spaces_idx:" l:shortest_leading_spaces_idx
-                    \ .", longest_leading_spaces_run:" l:longest_leading_spaces_run
+    let g:detectindent_verbose_msg = l:verbose_msg
+                \ ."; has_leading_tabs: ".string(l:has_leading_tabs)
+                \ .", has_leading_spaces: ".string(l:has_leading_spaces)
+                \ .", shortest_leading_spaces_run: ".string(l:shortest_leading_spaces_run)
+                \ .", shortest_leading_spaces_idx: ".string(l:shortest_leading_spaces_idx)
+endfun
 
-        let changed_msg = []
-        for [setting, oldval] in items(b:detectindent_cursettings)
-          exec 'let newval = &'.setting
-          if oldval != newval
-            let changed_msg += [ setting." changed from ".oldval." to ".newval ]
-          end
-        endfor
-        if len(changed_msg)
-          echo "Initial buffer settings changed:" join(changed_msg, ", ")
-        endif
-    endif
+fun! <SID>DetectIndentV()
+    echo g:detectindent_verbose_msg
 endfun
 
 command! -bar -nargs=0 DetectIndent call <SID>DetectIndent()
+command! -bar -nargs=0 DetectIndentV call <SID>DetectIndentV()
 
