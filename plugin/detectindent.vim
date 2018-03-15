@@ -190,6 +190,11 @@ fun! <SID>DetectIndent()
 
     endif
 
+    " For makefile, use noexpandtab
+    if &ft == "make"
+        setl noexpandtab
+    endif
+
     let g:detectindent_verbose_msg = l:verbose_msg
                 \ ."; has_leading_tabs: ".string(l:has_leading_tabs)
                 \ .", has_leading_spaces: ".string(l:has_leading_spaces)
