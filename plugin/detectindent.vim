@@ -154,6 +154,13 @@ fun! <SID>DetectIndent()
 
     endwhile
 
+    " Only support 2 to 8
+    if l:shortest_leading_spaces_run < 2
+      let l:shortest_leading_spaces_run = 2
+    elseif l:shortest_leading_spaces_run > 8
+      let l:shortest_leading_spaces_run = 8
+    endif
+
     if l:has_leading_tabs && ! l:has_leading_spaces
         " tabs only, no spaces
         let l:verbose_msg = "Detected tabs only and no spaces"
