@@ -136,6 +136,7 @@ fun! <SID>DetectIndent()
                 let l:has_leading_spaces = 1
                 let l:spaces = strlen(matchstr(l:line, '^ \+'))
                 if l:shortest_leading_spaces_run == 0 ||
+                        \ l:shortest_leading_spaces_run == 1 ||
                             \ l:spaces < l:shortest_leading_spaces_run
                     let l:shortest_leading_spaces_run = l:spaces
                     let l:shortest_leading_spaces_idx = l:idx
@@ -154,11 +155,13 @@ fun! <SID>DetectIndent()
 
     endwhile
 
-    " Only support 2 to 8
-    if l:shortest_leading_spaces_run < 2
-      let l:shortest_leading_spaces_run = 2
-    elseif l:shortest_leading_spaces_run > 8
-      let l:shortest_leading_spaces_run = 8
+    " Only support 2, 4, 8
+    if l:shortest_leading_spaces_run <= 2
+        let l:shortest_leading_spaces_run = 2
+    elseif l:shortest_leading_spaces_run <= 4
+        let l:shortest_leading_spaces_run = 4
+    else
+        let l:shortest_leading_spaces_run = 8
     endif
 
     if l:has_leading_tabs && ! l:has_leading_spaces
