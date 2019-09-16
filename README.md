@@ -1,4 +1,15 @@
+Contents
+--------
+- [Intro](#intro)
+- [User Guide](#user-guide)
+
+Intro
+-----
+
 A Vim plugin, for automatically detecting indent settings.
+
+User Guide
+----------
 
 :DetectIndent -- try to intelligently set the 'shiftwidth',
 'expandtab' and 'tabstop' options based upon the existing settings in use in
